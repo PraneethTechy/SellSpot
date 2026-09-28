@@ -12,7 +12,7 @@ import CategoryProducts from "./components/CategoryCard/CategoryProducts";
 
 function App() {
   return (
-    <BrowserRouter>
+    
       <Routes>
 
         <Route path="/" element={<Home />} />
@@ -54,7 +54,7 @@ function App() {
         </Route>
 
       </Routes>
-    </BrowserRouter>
+   
   );
 }
 

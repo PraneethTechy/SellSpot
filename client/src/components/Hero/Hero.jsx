@@ -35,8 +35,7 @@ export default function Hero() {
         {/* Welcome Pill */}
         {user ? (
           <div className="inline-block px-4 py-1.5 rounded-full bg-white border border-stone-200 text-slate-700 text-sm font-medium mb-6 shadow-sm">
-            Hello, <span className="text-amber-500 font-bold">{name}</span> 
-          </div>
+Hello, <span className="text-amber-500 font-bold capitalize">{name}</span>          </div>
         ) : (
           <span className="inline-block px-4 py-1.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold tracking-wide uppercase mb-6">
             Trusted Marketplace

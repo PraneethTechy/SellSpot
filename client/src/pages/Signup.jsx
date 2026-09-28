@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "../services/supabase";
 import {
   User,
   Mail,
@@ -15,7 +14,14 @@ import {
 } from "lucide-react";
 
 import { signUp } from "../services/authService";
-import { createProfile } from "../services/profileService";
+
+import { uploadImages } from "../services/uploadService";
+
+import {
+  showSuccess,
+  showError,
+} from "../utils/toast";
+
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -50,83 +56,46 @@ export default function Signup() {
   }
 
   async function handleSubmit(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    setLoading(true);
+  setLoading(true);
 
-    const { data, error } = await signUp(
-      formData.email,
-      formData.password
-    );
+  let profileImageUrl = "";
+
+  // Upload profile image
+  if (profileImage) {
+    const { data, error } = await uploadImages([profileImage]);
 
     if (error) {
       setLoading(false);
-      alert(error.message);
+      showError(error.message || "Image upload failed");
       return;
     }
 
-    const user = data.user;
+    profileImageUrl = data.images[0];
+  }
 
-    console.log("User:", user);
+  // Register User
+  const { error } = await signUp({
+    name: formData.fullName,
+    email: formData.email,
+    password: formData.password,
+    phoneNumber: formData.phone,
+    city: formData.city,
+    profileImage: profileImageUrl,
+  });
 
-const {
-  data: { session },
-} = await supabase.auth.getSession();
+  setLoading(false);
 
-console.log("Session:", session);
-console.log("Selected Image:", profileImage);
-
-let avatarUrl = "";
-
-if (profileImage) {
-  const fileExt = profileImage.name.split(".").pop();
-  const fileName = `${user.id}.${fileExt}`;
-
-  console.log("Uploading:", fileName);
-
-  const { data: uploadData, error: uploadError } =
-    await supabase.storage
-      .from("avatars")
-      .upload(fileName, profileImage, {
-        upsert: true,
-      });
-
-  console.log("Upload Data:", uploadData);
-  console.log("Upload Error:", uploadError);
-
-  if (uploadError) {
-    alert(uploadError.message);
-    setLoading(false);
+  if (error) {
+    showError(error.message || "Signup failed");
     return;
   }
 
-  const { data: publicData } = supabase.storage
-    .from("avatars")
-    .getPublicUrl(fileName);
+  showSuccess("Account created successfully");
 
-  console.log("Public URL:", publicData.publicUrl);
-
-  avatarUrl = publicData.publicUrl;
+  navigate("/login");
 }
-    const { error: profileError } = await createProfile({
-  id: user.id,
-  full_name: formData.fullName,
-  phone: formData.phone,
-  city: formData.city,
-  avatar_url: avatarUrl,
-});
-
-    setLoading(false);
-
-    if (profileError) {
-      alert(profileError.message);
-      return;
-    }
-
-    alert("Signup Successful!");
-
-    navigate("/login");
-  }
 
   return (
     <div className="min-h-screen bg-stone-100 flex">

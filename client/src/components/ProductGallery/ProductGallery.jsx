@@ -1,15 +1,19 @@
 import { useState, useEffect } from "react";
 
 export default function ProductGallery({ images = [] }) {
+  const validImages = images.filter(Boolean);
+
   const [selectedImage, setSelectedImage] = useState("");
 
   useEffect(() => {
-    if (images.length > 0) {
-      setSelectedImage(images[0]);
+    if (validImages.length > 0) {
+      setSelectedImage(validImages[0]);
+    } else {
+      setSelectedImage("");
     }
   }, [images]);
 
-  if (images.length === 0) {
+  if (validImages.length === 0) {
     return (
       <div className="w-full h-125 bg-gray-200 rounded-2xl flex items-center justify-center">
         No Image Available
@@ -19,20 +23,18 @@ export default function ProductGallery({ images = [] }) {
 
   return (
     <div>
-
       {/* Main Image */}
-
-      <img
-        src={selectedImage}
-        alt="Product"
-        className="w-full h-125 object-cover rounded-2xl shadow"
-      />
+      {selectedImage && (
+        <img
+          src={selectedImage}
+          alt="Product"
+          className="w-full h-125 object-cover rounded-2xl shadow"
+        />
+      )}
 
       {/* Thumbnails */}
-
       <div className="flex gap-3 mt-4 overflow-x-auto">
-
-        {images.map((image, index) => (
+        {validImages.map((image, index) => (
           <img
             key={index}
             src={image}
@@ -45,9 +47,7 @@ export default function ProductGallery({ images = [] }) {
             }`}
           />
         ))}
-
       </div>
-
     </div>
   );
 }

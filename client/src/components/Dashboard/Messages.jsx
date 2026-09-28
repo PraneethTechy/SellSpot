@@ -8,6 +8,7 @@ import { getConversations } from "../../services/chatService";
 import ConversationList from "../Chat/ConversationList";
 import ChatPanel from "../Chat/ChatPanel";
 import EmptyChat from "../Chat/EmptyChat";
+import ConversationSkeleton from "../Skeleton/ConversationSkeleton";
 
 export default function Messages() {
 
@@ -18,33 +19,51 @@ export default function Messages() {
   const [conversations, setConversations] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
 
-  useEffect(() => {
-    if (!user) return;
+  const [loading, setLoading] = useState(true);
 
-    loadConversations();
-  }, [user]);
+  // useEffect(() => {
+  //   if (!user) return;
 
-  async function loadConversations() {
+  //   loadConversations();
     
-    const { data, error } = await getConversations(user.id);
+  // }, [user]);
 
-    if (error) {
-      console.log(error);
-      return;
-    }
+  useEffect(() => {
+  if (!user) return;
 
-    setConversations(data);
+  loadConversations();
+}, [user, location.key]);
 
-    if (location.state?.conversationId) {
-      const chat = data.find(
-        (item) => item.id === location.state.conversationId
-      );
+async function loadConversations() {
+  setLoading(true);
 
-      if (chat) {
-        setSelectedChat(chat);
-      }
+  const { data, error } = await getConversations();
+
+  if (error) {
+    console.log(error);
+    setLoading(false);
+    return;
+  }
+
+  // console.log("Conversations:", data);
+
+  setConversations(data);
+
+  if (location.state?.conversationId) {
+    const chat = data.find(
+      (item) => item._id === location.state.conversationId
+    );
+
+    if (chat) {
+      setSelectedChat(chat);
     }
   }
+
+  setLoading(false);
+}
+
+
+  
 
   return (
     <div
@@ -70,20 +89,27 @@ export default function Messages() {
             bg-stone-50
           "
         >
-          <ConversationList
-            conversations={conversations}
-            selectedChat={selectedChat}
-            setSelectedChat={setSelectedChat}
-          />
+          {loading ? (
+  <ConversationSkeleton />
+) : (
+  <ConversationList
+    conversations={conversations}
+    selectedChat={selectedChat}
+    setSelectedChat={setSelectedChat}
+  />
+)}
         </div>
 
         <div className="flex-1 overflow-hidden">
 
           {selectedChat ? (
+         
+
             <ChatPanel
-              chat={selectedChat}
-              closeChat={() => setSelectedChat(null)}
-            />
+  chat={selectedChat}
+  closeChat={() => setSelectedChat(null)}
+  refreshConversations={loadConversations}
+/>
           ) : (
             <EmptyChat />
           )}
@@ -98,11 +124,15 @@ export default function Messages() {
 
         {!selectedChat ? (
 
-          <ConversationList
-            conversations={conversations}
-            selectedChat={selectedChat}
-            setSelectedChat={setSelectedChat}
-          />
+           loading ? (
+    <ConversationSkeleton />
+  ) : (
+    <ConversationList
+      conversations={conversations}
+      selectedChat={selectedChat}
+      setSelectedChat={setSelectedChat}
+    />
+  )
 
         ) : (
 
@@ -128,10 +158,13 @@ export default function Messages() {
 
             <div className="flex-1 overflow-hidden">
 
+             
+
               <ChatPanel
-                chat={selectedChat}
-                closeChat={() => setSelectedChat(null)}
-              />
+  chat={selectedChat}
+  closeChat={() => setSelectedChat(null)}
+  refreshConversations={loadConversations}
+/>
 
             </div>
 

@@ -4,15 +4,22 @@ import {
   getProductForEdit,
   updateProduct,
 } from "../services/productService";
-import { uploadProductImage } from "../services/storageService";
+import { uploadImages } from "../services/uploadService";
 import { useAuth } from "../context/AuthContext";
 import { useSearchParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import { Plus, X } from "lucide-react";
 
+import {
+  showSuccess,
+  showError,
+} from "../utils/toast";
+
+
+
 export default function AddProduct() {
-  const { user } = useAuth();
+  // const { user } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState([]);
@@ -54,24 +61,24 @@ export default function AddProduct() {
       !formData.location ||
       (images.length === 0 && imageUrls.length === 0)
     ) {
-      alert("Please fill all fields and select at least one image.");
+      showError("Please fill all fields and select at least one image.");
       return;
     }
 
     setLoading(true);
 
     try {
-      const uploadedImageUrls = [...imageUrls];
-      
-      for (const image of images) {
-        const { url, error } = await uploadProductImage(image);
+     const uploadedImageUrls = [...imageUrls];
 
-        if (error) {
-          throw error;
-        }
+if (images.length > 0) {
+  const { data, error } = await uploadImages(images);
 
-        uploadedImageUrls.push(url);
-      }
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  uploadedImageUrls.push(...data.images);
+}
 
       const product = {
         title: formData.title,
@@ -79,7 +86,7 @@ export default function AddProduct() {
         price: Number(formData.price),
         category: formData.category,
         location: formData.location,
-        image_urls: uploadedImageUrls,
+images: uploadedImageUrls,
       };
 
       let error;
@@ -89,18 +96,16 @@ export default function AddProduct() {
         console.log("Product:", product);
         ({ error } = await updateProduct(productId, product));
       } else {
-        ({ error } = await addProduct({
-          ...product,
-          user_id: user.id,
-          is_sold: false,
-        }));
+       ({
+  error,
+} = await addProduct(product));
       }
 
       if (error) {
         throw error;
       }
 
-      alert(
+      showSuccess(
         isEditing
           ? "Product Updated Successfully!"
           : "Product Added Successfully!"
@@ -125,7 +130,7 @@ export default function AddProduct() {
       setImageUrls([]);
     } catch (error) {
       console.error(error);
-      alert(error.message);
+      showError(error.message);
     } finally {
       setLoading(false);
     }
@@ -146,7 +151,7 @@ export default function AddProduct() {
     console.log("ERROR:", error);
 
     if (error) {
-      alert(error.message);
+      showError(error.message);
       return;
     }
 
@@ -158,8 +163,9 @@ export default function AddProduct() {
       location: data.location || "",
     });
 
-    setImageUrls(data.image_urls || []);
-  }
+setImageUrls(data.images || []);
+
+}
 
   function removeExistingImage(index) {
     setImageUrls((prev) => prev.filter((_, i) => i !== index));

@@ -3,12 +3,12 @@ import { Calendar, MapPin, ArrowRight } from "lucide-react";
 
 export default function ProductCard({ product }) {
   const image =
-    product.image_urls && product.image_urls.length > 0
-      ? product.image_urls[0]
+    product.images && product.images.length > 0
+      ? product.images[0]
       : "https://placehold.co/600x400?text=No+Image";
 
   return (
-    <Link to={`/product/${product.id}`}>
+    <Link to={`/product/${product._id}`}>
       <div
         className="
           group
@@ -52,7 +52,7 @@ export default function ProductCard({ product }) {
             {product.title}
           </h3>
 
-          {/* Description - Single line with ellipsis (...) */}
+          {/* Description */}
           <p className="mt-2 text-slate-500 text-sm line-clamp-1">
             {product.description}
           </p>
@@ -69,7 +69,7 @@ export default function ProductCard({ product }) {
             <div className="flex items-center gap-2">
               <Calendar size={15} />
               <span>
-                {new Date(product.created_at).toLocaleDateString()}
+                {new Date(product.createdAt).toLocaleDateString()}
               </span>
             </div>
           </div>

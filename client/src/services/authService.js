@@ -1,38 +1,70 @@
-import { supabase } from "./supabase";
+import api from "./apiClient";
 
-export async function signUp(email, password) {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+export async function signUp(userData) {
+  try {
+    const { data } = await api.post("/auth/register", userData);
 
-  return { data, error };
+    return {
+      data,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error.response?.data || error,
+    };
+  }
 }
 
 export async function signIn(email, password) {
-  const { data, error } =
-    await supabase.auth.signInWithPassword({
+  try {
+    const { data } = await api.post("/auth/login", {
       email,
       password,
     });
 
-  return { data, error };
+    localStorage.setItem("token", data.token);
+
+    return {
+      data,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error.response?.data || error,
+    };
+  }
 }
 
-export async function signInWithGoogle() {
-  return await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: window.location.origin,
-    },
-  });
-}
-
-export async function signOut() {
-  return await supabase.auth.signOut();
+export function signOut() {
+  localStorage.removeItem("token");
 }
 
 export async function getCurrentUser() {
-  const { data } = await supabase.auth.getUser();
-  return data.user;
+  try {
+    const { data } = await api.get("/profile/me");
+
+    return data.user;
+  } catch (error) {
+    return null;
+  }
+}
+
+export async function googleLogin(credential) {
+  try {
+    const { data } = await api.post("/auth/google", {
+      credential,
+    });
+
+    return {
+      data,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error.response?.data || error,
+    };
+  }
 }

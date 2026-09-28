@@ -1,91 +1,96 @@
-import { supabase } from "./supabase";
+import api from "./apiClient";
 
-export async function getConversation(productId, buyerId) {
-  const { data, error } = await supabase
-    .from("conversations")
-    .select("*")
-    .eq("product_id", productId)
-    .eq("buyer_id", buyerId)
-    .single();
+// Get conversation for a product
+export async function getConversation(productId) {
+  try {
+    const { data } = await api.get(`/conversations/${productId}`);
 
-  if (error && error.code !== "PGRST116") {
-    return { data: null, error };
+    return {
+      data: data.conversation,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error.response?.data || error,
+    };
   }
-
-  return { data, error: null };
 }
 
-export async function createConversation(
-  productId,
-  buyerId,
-  sellerId
-) {
-  const { data, error } = await supabase
-    .from("conversations")
-    .insert({
-      product_id: productId,
-      buyer_id: buyerId,
-      seller_id: sellerId,
-    })
-    .select()
-    .single();
-
-  return { data, error };
-}
-
-export async function getConversations(userId) {
-  const { data, error } = await supabase
-    .from("conversations")
-    .select(`
-      *,
-      products(title),      
-      seller:profiles!conversations_seller_fk(
-        full_name,
-        avatar_url
-      ),
-      buyer:profiles!conversations_buyer_fk(
-        full_name,
-        avatar_url
-      )
-    `)
-    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
-    .order("created_at", {
-      ascending: false,
+// Create new conversation
+export async function createConversation(productId) {
+  try {
+    const { data } = await api.post("/conversations", {
+      productId,
     });
 
-  console.log(data);
-  console.log(error);
-
-  return {
-    data,
-    error,
-  };
+    return {
+      data: data.conversation,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error.response?.data || error,
+    };
+  }
 }
 
+// Get all conversations
+export async function getConversations() {
+  try {
+    const { data } = await api.get("/conversations");
+
+    return {
+      data: data.conversations,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: [],
+      error: error.response?.data || error,
+    };
+  }
+}
+
+// Get messages
 export async function getMessages(conversationId) {
-  const { data, error } = await supabase
-    .from("messages")
-    .select("*")
-    .eq("conversation_id", conversationId)
-    .order("created_at");
+  try {
+    const { data } = await api.get(
+      `/messages/${conversationId}`
+    );
 
-  return { data, error };
+    return {
+      data: data.messages,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: [],
+      error: error.response?.data || error,
+    };
+  }
 }
 
+// Send message
 export async function sendMessage(
-  conversation_id,
-  sender_id,
+  conversationId,
   message
 ) {
-  const { data, error } = await supabase
-    .from("messages")
-    .insert({
-      conversation_id,
-      sender_id,
+  try {
+    const { data } = await api.post("/messages", {
+      conversationId,
       message,
-    })
-    .select()
-    .single();
+    });
 
-  return { data, error };
+    return {
+      data: data.newMessage,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error.response?.data || error,
+    };
+  }
 }

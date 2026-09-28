@@ -1,40 +1,42 @@
 import { useState } from "react";
 import { SendHorizontal } from "lucide-react";
 
-import { useAuth } from "../../context/AuthContext";
 import { sendMessage } from "../../services/chatService";
-import socket from "../../services/socket";
 
 export default function MessageInput({
   conversationId,
   onNewMessage,
   refreshConversations,
 }) {
-  const { user } = useAuth();
-
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
 
-    if (!message.trim()) return;
+    if (!message.trim() || loading) {
+      return;
+    }
+
+    setLoading(true);
 
     const messageText = message.trim();
 
     const { data, error } = await sendMessage(
       conversationId,
-      user.id,
       messageText
     );
+
+    setLoading(false);
 
     if (error) {
       console.error(error);
       return;
     }
 
-    onNewMessage(data);
-
-    socket.emit("send_message", data);
+    if (data) {
+      onNewMessage(data);
+    }
 
     setMessage("");
 
@@ -44,18 +46,12 @@ export default function MessageInput({
   return (
     <form
       onSubmit={handleSubmit}
-      className="
-        bg-white
-        border-t
-        border-stone-200
-        p-3
-        md:p-4
-        flex
-        items-end
-        gap-3
-      "
+      className="flex items-center gap-3 p-3 md:p-4"
     >
+      {/* Message Input */}
+
       <input
+        type="text"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="Type a message..."
@@ -76,9 +72,11 @@ export default function MessageInput({
         "
       />
 
+      {/* Send Button */}
+
       <button
         type="submit"
-        disabled={!message.trim()}
+        disabled={!message.trim() || loading}
         className="
           bg-amber-500
           hover:bg-amber-600
@@ -101,7 +99,7 @@ export default function MessageInput({
         <SendHorizontal size={20} />
 
         <span className="hidden md:inline">
-          Send
+          {loading ? "Sending..." : "Send"}
         </span>
       </button>
     </form>

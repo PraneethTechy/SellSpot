@@ -12,17 +12,19 @@ export default function ChatHeader({
 }) {
   const { user } = useAuth();
 
-  const isSeller = chat.seller_id === user.id;
+  const isSeller =
+    chat.seller?._id === user._id;
 
   const otherUser = isSeller
-    ? chat.buyer?.full_name
-    : chat.seller?.full_name;
+    ? chat.buyer
+    : chat.seller;
 
-  const otherAvatar = isSeller
-    ? chat.buyer?.avatar_url
-    : chat.seller?.avatar_url;
+  const otherName = otherUser?.name;
 
-  const initials = (otherUser || "U")
+  const otherAvatar =
+    otherUser?.profileImage;
+
+  const initials = (otherName || "U")
     .split(" ")
     .map((word) => word[0])
     .join("")
@@ -51,10 +53,9 @@ export default function ChatHeader({
         {/* Avatar */}
 
         {otherAvatar ? (
-
           <img
             src={otherAvatar}
-            alt={otherUser}
+            alt={otherName}
             className="
               w-11
               h-11
@@ -67,9 +68,7 @@ export default function ChatHeader({
               shrink-0
             "
           />
-
         ) : (
-
           <div
             className="
               w-11
@@ -88,7 +87,6 @@ export default function ChatHeader({
           >
             {initials}
           </div>
-
         )}
 
         {/* Details */}
@@ -111,7 +109,8 @@ export default function ChatHeader({
                 truncate
               "
             >
-              {chat.products?.title}
+              {chat.product?.title}
+              
             </h2>
 
           </div>
@@ -123,16 +122,15 @@ export default function ChatHeader({
               gap-2
               mt-1
               text-sm
-              text-stone-500
-            "
-          >
+              text-stone-500 "
+            >
             <UserRound
               size={14}
               className="shrink-0"
             />
 
             <span className="truncate">
-              {otherUser}
+              {otherName}
             </span>
 
           </div>
@@ -162,6 +160,8 @@ export default function ChatHeader({
       >
         <X size={20} />
       </button>
+
+      
 
     </div>
   );

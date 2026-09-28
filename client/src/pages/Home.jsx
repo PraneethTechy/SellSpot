@@ -1,31 +1,39 @@
 import { useEffect, useState } from "react";
-
-import Navbar from "../components/Navbar/Navbar";
+import Navbar from "../components/Navbar/Navbar"
 import Hero from "../components/Hero/Hero";
 import Categories from "../components/CategoryCard/Categories";
 import LatestProducts from "../components/ProductCard/LatestProducts";
-
-import { getProducts } from "../services/productService";
 import Footer from "../components/Footer";
 
+import { getProducts } from "../services/productService";
+import AnnouncementBar from "../components/AnnouncementBar";
 
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadProducts();
-  }, []); 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  async function loadProducts() {
+  useEffect(() => {
+    loadProducts(currentPage);
+  }, [currentPage]);
+
+  async function loadProducts(page) {
     setLoading(true);
 
-    const { data, error } = await getProducts();
+    const {
+      data,
+      pagination,
+      error,
+    } = await getProducts(page, 12);
 
     if (error) {
       console.error(error);
     } else {
       setProducts(data || []);
+      setCurrentPage(pagination.currentPage);
+      setTotalPages(pagination.totalPages);
     }
 
     setLoading(false);
@@ -33,15 +41,20 @@ export default function Home() {
 
   return (
     <>
-      <Navbar />
+    <Navbar />
 
       <Hero />
+
+      <AnnouncementBar />
 
       <Categories />
 
       <LatestProducts
         products={products}
         loading={loading}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
       />
 
       <Footer />

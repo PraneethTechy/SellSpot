@@ -5,13 +5,8 @@ import {
   useState,
 } from "react";
 
-import { supabase } from "../services/supabase";
 import socket from "../services/socket";
-
-import {
-  getProfileById,
-  createProfile,
-} from "../services/profileService";
+import { getCurrentUser } from "../services/authService";
 
 const AuthContext = createContext();
 
@@ -20,84 +15,46 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  async function loadProfile(currentUser) {
-    const { data, error } = await getProfileById(currentUser.id);
+  const loadCurrentUser = async () => {
+    const token = localStorage.getItem("token");
 
-    let currentProfile = data;
-
-    if (error || !currentProfile) {
-      const { data: newProfile, error: createError } =
-        await createProfile({
-          id: currentUser.id,
-          full_name:
-            currentUser.user_metadata?.full_name ||
-            currentUser.user_metadata?.name ||
-            currentUser.email.split("@")[0],
-          phone: "",
-          city: "",
-          avatar_url:
-            currentUser.user_metadata?.avatar_url || "",
-        });
-
-      if (!createError) {
-        currentProfile = newProfile;
-      }
+    if (!token) {
+      setUser(null);
+      setProfile(null);
+      setLoading(false);
+      return;
     }
 
-    setProfile(currentProfile);
-  }
+    const currentUser = await getCurrentUser();
+
+    if (currentUser) {
+      setUser(currentUser);
+      setProfile(currentUser);
+
+      if (!socket.connected) {
+        socket.auth = {
+          token,
+        };
+
+        socket.connect();
+      }
+    } else {
+      localStorage.removeItem("token");
+
+      setUser(null);
+      setProfile(null);
+
+      socket.disconnect();
+    }
+
+    setLoading(false);
+  };
 
   useEffect(() => {
-    async function loadUser() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      const currentUser = session?.user ?? null;
-
-      setUser(currentUser);
-
-      if (currentUser) {
-        await loadProfile(currentUser);
-
-        if (!socket.connected) {
-          socket.connect();
-          socket.emit("join", currentUser.id);
-        }
-      } else {
-        setProfile(null);
-      }
-
-      setLoading(false);
-    }
-
-    loadUser();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const currentUser = session?.user ?? null;
-
-        setUser(currentUser);
-
-        if (currentUser) {
-          await loadProfile(currentUser);
-
-          if (!socket.connected) {
-            socket.connect();
-            socket.emit("join", currentUser.id);
-          }
-        } else {
-          setProfile(null);
-          socket.disconnect();
-        }
-      }
-    );
+    loadCurrentUser();
 
     return () => {
       socket.disconnect();
-      subscription.unsubscribe();
     };
   }, []);
 
@@ -106,8 +63,10 @@ export function AuthProvider({ children }) {
       value={{
         user,
         profile,
-        setProfile,
         loading,
+        setUser,
+        setProfile,
+        loadCurrentUser,
       }}
     >
       {children}

@@ -2,6 +2,7 @@ import categories from "../../utils/categories";
 import CategoryCard from "./CategoryCard";
 import { ArrowRight } from "lucide-react";
 
+
 export default function Categories() {
   return (
     <section className="py-20 bg-stone-100">

@@ -73,11 +73,11 @@ export default function ConversationList({
           conversations.map((chat) => (
 
             <ConversationCard
-              key={chat.id}
-              chat={chat}
-              selected={selectedChat?.id === chat.id}
-              onClick={() => setSelectedChat(chat)}
-            />
+    key={chat._id}
+    chat={chat}
+    selected={selectedChat?._id === chat._id}
+    onClick={() => setSelectedChat(chat)}
+/>
 
           ))
 

@@ -10,94 +10,102 @@ import {
 } from "lucide-react";
 
 import { useAuth } from "../../context/AuthContext";
-import { getProfileById } from "../../services/profileService";
+import { getCurrentUser } from "../../services/authService";
 
 import EditProfileModal from "../Dashboard/EditProfileModal";
+import ProfileSkeleton from "../Skeleton/ProfileSkeleton";
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { profile, setProfile } = useAuth();
+
+  const [user, setUser] = useState(null);
 
   const [showEditModal, setShowEditModal] = useState(false);
-  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    if (!user) return;
-    loadProfile();
-  }, [user]);
+    loadUser();
+  }, []);
 
-  async function loadProfile() {
-    const { data, error } = await getProfileById(user.id);
+  async function loadUser() {
+    const currentUser = await getCurrentUser();
 
-    if (error) {
-      console.log(error);
-      return;
-    }
-
-    setProfile(data);
+    setUser(currentUser);
   }
 
-  if (!profile) {
-    return (
-      <div className="flex justify-center items-center h-[50vh]">
-        <div className="text-center">
-          <div className="w-8 h-8 border-3 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="mt-3 text-sm text-stone-500">Loading Profile...</p>
-        </div>
-      </div>
-    );
-  }
+ if (!profile || !user) {
+  return <ProfileSkeleton />;
+}
 
   return (
     <>
       <div className="max-w-5xl mx-auto px-6 py-6">
-        {/* Page Header */}
+        {/* Header */}
+
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-neutral-900">My Profile</h1>
+          <h1 className="text-2xl font-bold text-neutral-900">
+            My Profile
+          </h1>
+
           <p className="text-sm text-stone-500 mt-1">
-            Manage your personal information and marketplace account.
+            Manage your personal information and marketplace
+            account.
           </p>
         </div>
 
-        {/* Main Profile Card (Wider Aspect Ratio) */}
+        {/* Profile Card */}
+
         <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden flex flex-col justify-between">
-          
-          {/* Top Hero Section */}
+          {/* Hero */}
+
           <div className="bg-linear-to-b from-amber-50/60 via-amber-50/20 to-white px-8 py-8 border-b border-stone-100">
             <div className="flex items-center justify-between gap-6">
-              
               <div className="flex items-center gap-6">
                 {/* Avatar */}
+
                 <div className="w-24 h-24 rounded-full bg-amber-100 flex items-center justify-center shrink-0 overflow-hidden ring-4 ring-white shadow-xs">
-                  {profile.avatar_url ? (
+                  {profile.profileImage ? (
                     <img
-                      src={profile.avatar_url}
+                      src={profile.profileImage}
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <User size={44} className="text-amber-700/80" />
+                    <User
+                      size={44}
+                      className="text-amber-700/80"
+                    />
                   )}
                 </div>
 
-                {/* User Info Header */}
+                {/* User Info */}
+
                 <div>
                   <h2 className="text-2xl font-bold text-neutral-900">
-                    {profile.full_name || "User"}
+                    {profile.name || "User"}
                   </h2>
-                  
+
                   <div className="flex items-center gap-2 text-sm text-stone-500 mt-1.5">
-                    <Mail size={16} className="text-amber-600" />
-                    <span>{user.email}</span>
+                    <Mail
+                      size={16}
+                      className="text-amber-600"
+                    />
+
+                    <span>{profile.email}</span>
                   </div>
 
                   <div className="mt-3 inline-flex items-center gap-1.5 bg-amber-100/70 text-amber-800 text-xs px-3.5 py-1 rounded-full font-medium">
-                    <BadgeCheck size={15} className="text-amber-700" />
+                    <BadgeCheck
+                      size={15}
+                      className="text-amber-700"
+                    />
+
                     Verified SellSpot Member
                   </div>
                 </div>
               </div>
 
-              {/* Edit Profile Button */}
+              {/* Edit Button */}
+
               <button
                 onClick={() => setShowEditModal(true)}
                 className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition shadow-xs"
@@ -108,41 +116,58 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Details Section */}
+          {/* Details */}
+
           <div className="p-8 bg-white">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              
               <InfoCard
-                icon={<Phone className="text-amber-600" size={20} />}
+                icon={
+                  <Phone
+                    className="text-amber-600"
+                    size={20}
+                  />
+                }
                 title="Phone Number"
-                value={profile.phone || "Not Added"}
+                value={profile.phoneNumber || "Not Added"}
               />
 
               <InfoCard
-                icon={<MapPin className="text-amber-600" size={20} />}
+                icon={
+                  <MapPin
+                    className="text-amber-600"
+                    size={20}
+                  />
+                }
                 title="City"
                 value={profile.city || "Not Added"}
               />
 
               <InfoCard
-                icon={<Mail className="text-amber-600" size={20} />}
+                icon={
+                  <Mail
+                    className="text-amber-600"
+                    size={20}
+                  />
+                }
                 title="Email Address"
-                value={user.email}
+                value={profile.email}
               />
 
               <InfoCard
-                icon={<Calendar className="text-amber-600" size={20} />}
-                title="Member Since"
-                value={new Date(user.created_at).toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              />
-
+  icon={<Calendar className="text-amber-600" size={20} />}
+  title="Member Since"
+  value={
+    profile?.createdAt
+      ? new Date(profile.createdAt).toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : "Not available"
+  }
+/>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -150,7 +175,11 @@ export default function Profile() {
         <EditProfileModal
           profile={profile}
           onClose={() => setShowEditModal(false)}
-          onProfileUpdated={(updatedProfile) => setProfile(updatedProfile)}
+          onProfileUpdated={(updatedProfile) => {
+            
+            setProfile(updatedProfile);
+            setShowEditModal(false);
+          }}
         />
       )}
     </>
@@ -158,14 +187,19 @@ export default function Profile() {
 }
 
 function InfoCard({ icon, title, value }) {
+
   return (
     <div className="bg-stone-50/60 border border-stone-100/80 rounded-xl p-4.5">
       <div className="flex items-center gap-4">
         <div className="w-12 h-12 rounded-xl bg-amber-100/60 flex items-center justify-center shrink-0">
           {icon}
         </div>
+
         <div className="min-w-0">
-          <p className="text-xs text-stone-500 font-medium">{title}</p>
+          <p className="text-xs text-stone-500 font-medium">
+            {title}
+          </p>
+
           <p className="mt-0.5 text-sm font-semibold text-neutral-900 truncate">
             {value}
           </p>

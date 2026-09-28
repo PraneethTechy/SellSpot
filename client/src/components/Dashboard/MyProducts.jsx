@@ -2,67 +2,65 @@ import { useEffect, useState } from "react";
 import { Pencil, Trash2, MapPin, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import { useAuth } from "../../context/AuthContext";
-import {
-  getMyProducts,
-  deleteProduct,
-} from "../../services/productService";
+import { getMyProducts, deleteProduct } from "../../services/productService";
+
+import MyProductsSkeleton from "../../components/Skeleton/MyProductsSkeleton";
+
+import ConfirmModal from "../Common/ConfirmModal";
+
+import { showSuccess, showError } from "../../utils/toast";
 
 export default function MyProducts() {
-  const { user } = useAuth();
-
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
-      loadProducts();
-    }
-  }, [user]);
+    loadProducts();
+  }, []);
 
   async function loadProducts() {
     setLoading(true);
 
-    const { data, error } = await getMyProducts(user.id);
+    const { data, error } = await getMyProducts();
 
-    if (!error) {
-      setProducts(data);
+    if (error) {
+      console.error(error);
+      showError(error.message || "Failed to load products");
+    } else {
+      setProducts(data || []);
     }
 
     setLoading(false);
   }
 
   async function handleDelete(productId) {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this product?"
-    );
-
-    if (!confirmDelete) return;
+    setDeleting(true);
 
     const { error } = await deleteProduct(productId);
 
     if (error) {
-      alert(error.message);
+      showError(error.message || "Failed to delete product");
+      setDeleting(false);
       return;
     }
 
-    setProducts((prev) =>
-      prev.filter((product) => product.id !== productId)
-    );
+    showSuccess("Product deleted successfully");
 
-    alert("Product deleted successfully.");
+    await loadProducts();
+
+    setDeleting(false);
+    setShowDeleteModal(false);
+    setSelectedProduct(null);
   }
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center py-20">
-        <h2 className="text-xl font-semibold text-stone-600">
-          Loading products...
-        </h2>
-      </div>
-    );
+    return <MyProductsSkeleton />;
   }
 
   return (
@@ -70,9 +68,7 @@ export default function MyProducts() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-900">
-            My Products
-          </h1>
+          <h1 className="text-3xl font-bold text-neutral-900">My Products</h1>
 
           <p className="mt-1 text-sm text-stone-500">
             Manage all your listed products in one place.
@@ -152,7 +148,7 @@ export default function MyProducts() {
         <div className="space-y-2.5">
           {products.map((product) => (
             <div
-              key={product.id}
+              key={product._id}
               className="
                 bg-white
                 border
@@ -174,7 +170,7 @@ export default function MyProducts() {
               <div className="flex items-center gap-3.5 min-w-0">
                 <img
                   src={
-                    product.image_urls?.[0] ||
+                    product.images?.[0] ||
                     "https://placehold.co/120x120?text=No+Image"
                   }
                   alt={product.title}
@@ -214,9 +210,7 @@ export default function MyProducts() {
               {/* Action Buttons */}
               <div className="flex items-center gap-2 shrink-0">
                 <button
-                  onClick={() =>
-                    navigate(`/edit-product/${product.id}`)
-                  }
+                  onClick={() => navigate(`/edit-product/${product._id}`)}
                   className="
                     p-2
                     sm:px-3
@@ -242,27 +236,30 @@ export default function MyProducts() {
                 </button>
 
                 <button
-                  onClick={() => handleDelete(product.id)}
+                  onClick={() => {
+                    setSelectedProduct(product);
+                    setShowDeleteModal(true);
+                  }}
                   className="
-                    p-2
-                    sm:px-3
-                    sm:py-2
-                    rounded-lg
-                    border
-                    border-stone-200
-                    bg-stone-50
-                    text-stone-600
-                    hover:bg-red-50
-                    hover:text-red-600
-                    hover:border-red-200
-                    transition-all
-                    duration-300
-                    flex
-                    items-center
-                    gap-1.5
-                    text-xs
-                    font-medium
-                  "
+    p-2
+    sm:px-3
+    sm:py-2
+    rounded-lg
+    border
+    border-stone-200
+    bg-stone-50
+    text-stone-600
+    hover:bg-red-50
+    hover:text-red-600
+    hover:border-red-200
+    transition-all
+    duration-300
+    flex
+    items-center
+    gap-1.5
+    text-xs
+    font-medium
+  "
                 >
                   <Trash2 size={16} />
                   <span className="hidden sm:inline">Delete</span>
@@ -272,6 +269,26 @@ export default function MyProducts() {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+  isOpen={showDeleteModal}
+  title="Delete Product"
+  message="Are you sure you want to delete this product? This action cannot be undone."
+  confirmText={deleting ? "Deleting..." : "Delete"}
+  cancelText="Cancel"
+  loading={deleting}
+  onCancel={() => {
+    if (deleting) return;
+
+    setShowDeleteModal(false);
+    setSelectedProduct(null);
+  }}
+  onConfirm={() => {
+    if (selectedProduct) {
+      handleDelete(selectedProduct._id);
+    }
+  }}
+/>
     </div>
   );
 }

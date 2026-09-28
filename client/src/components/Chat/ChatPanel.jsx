@@ -12,121 +12,153 @@ export default function ChatPanel({
   closeChat,
   refreshConversations,
 }) {
-  
   const [messages, setMessages] = useState([]);
 
-  
+  // ================================
+  // LOAD EXISTING MESSAGES
+  // ================================
 
   useEffect(() => {
     if (!chat) return;
+
+    async function loadMessages() {
+      const { data, error } = await getMessages(chat._id);
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      setMessages(data || []);
+    }
 
     loadMessages();
   }, [chat]);
 
-  async function loadMessages() {
-    const { data, error } = await getMessages(chat.id);
-
-    if (error) {
-      console.log(error);
-      return;
-    }
-
-    setMessages(data);
-  }
+  // ================================
+  // JOIN CONVERSATION
+  // ================================
 
   useEffect(() => {
     if (!chat) return;
 
-    socket.emit("join_conversation", chat.id);
+    socket.emit(
+      "join_conversation",
+      chat._id
+    );
 
     return () => {
-      socket.off("receive_message");
+      socket.emit(
+        "leave_conversation",
+        chat._id
+      );
     };
   }, [chat]);
+
+  // ================================
+  // RECEIVE NEW MESSAGES
+  // ================================
 
   useEffect(() => {
     if (!chat) return;
 
     function handleReceiveMessage(newMessage) {
-      if (newMessage.conversation_id !== chat.id) return;
+      const conversationId =
+        typeof newMessage.conversation === "object"
+          ? newMessage.conversation?._id
+          : newMessage.conversation;
+
+      // Ignore messages from other conversations
+      if (conversationId !== chat._id) {
+        return;
+      }
 
       setMessages((prev) => {
+        // Prevent duplicate messages
         const exists = prev.some(
-          (msg) => msg.id === newMessage.id
+          (msg) => msg._id === newMessage._id
         );
 
-        if (exists) return prev;
+        if (exists) {
+          return prev;
+        }
 
         return [...prev, newMessage];
       });
 
+      // Refresh conversation list
       refreshConversations?.();
     }
 
-    socket.on("receive_message", handleReceiveMessage);
+    socket.on(
+      "receive_message",
+      handleReceiveMessage
+    );
 
     return () => {
-      socket.off("receive_message", handleReceiveMessage);
+      socket.off(
+        "receive_message",
+        handleReceiveMessage
+      );
     };
-  }, [chat]);
+  }, [chat, refreshConversations]);
 
-  if (!chat) return null;
+  // ================================
+  // NO CHAT SELECTED
+  // ================================
+
+  if (!chat) {
+    return null;
+  }
 
   return (
-    <div
-      className="
-        flex
-        flex-col
-        h-full
-        bg-white
-      "
-    >
-      {/* Header */}
+    <div className="flex flex-col h-full min-h-0">
+
+      {/* ================================
+          HEADER
+      ================================= */}
 
       <div className="shrink-0 border-b border-stone-200 bg-white">
-
         <ChatHeader
           chat={chat}
           closeChat={closeChat}
         />
-
       </div>
 
-      {/* Messages */}
+      {/* ================================
+          MESSAGES
+      ================================= */}
 
-      <div
-        className="
-          flex-1
-          overflow-hidden
-          min-h-0
-          bg-stone-50
-        "
-      >
+      <div className="flex-1 min-h-0 bg-stone-50">
         <MessageList
           messages={messages}
         />
       </div>
 
-      {/* Input */}
+      {/* ================================
+          MESSAGE INPUT
+      ================================= */}
 
-      <div
-        className="
-          shrink-0
-          border-t
-          border-stone-200
-          bg-white
-          pb-safe
-        "
-      >
+      <div className="shrink-0 border-t border-stone-200 bg-white">
         <MessageInput
-          conversationId={chat.id}
-          onNewMessage={(message) =>
-            setMessages((prev) => [
-              ...prev,
-              message,
-            ])
+          conversationId={chat._id}
+          onNewMessage={(message) => {
+            setMessages((prev) => {
+              // Prevent duplicate message
+              const exists = prev.some(
+                (msg) => msg._id === message._id
+              );
+
+              if (exists) {
+                return prev;
+              }
+
+              return [...prev, message];
+            });
+          }}
+          refreshConversations={
+            refreshConversations
           }
-          refreshConversations={refreshConversations}
         />
       </div>
 

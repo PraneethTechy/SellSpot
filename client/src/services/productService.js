@@ -1,91 +1,182 @@
-import { supabase } from "./supabase";
+import api from "./apiClient";
 
-export async function getProducts() {
-  return await supabase
-    .from("products")
-    .select("*")
-    .order("created_at", { ascending: false });
+export async function getProducts(page = 1, limit = 20) {
+  try {
+    
+    const { data } = await api.get("/products", {
+      params: {
+        page,
+        limit,
+      },
+    });
+
+    return {
+      data: data.products,
+      pagination: {
+        currentPage: data.currentPage,
+        totalPages: data.totalPages,
+        totalProducts: data.totalProducts,
+      },
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: [],
+      pagination: null,
+      error: error.response?.data || error,
+    };
+  }
 }
 
 export async function getProductById(id) {
-  return await supabase.from("products").select("*").eq("id", id).single();
+  try {
+    const { data } = await api.get(`/products/${id}`);
+
+    return {
+      data: data.product,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error.response?.data || error,
+    };
+  }
 }
 
 export async function addProduct(product) {
-  return await supabase.from("products").insert(product);
+  try {
+    const { data } = await api.post("/products", product);
+
+    return {
+      data,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error.response?.data || error,
+    };
+  }
 }
 
-export async function getMyProducts(userId) {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+export async function getMyProducts() {
+  try {
+    const { data } = await api.get("/products/my");
 
-  return { data, error };
+    return {
+      data: data.products,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: [],
+      error: error.response?.data || error,
+    };
+  }
 }
 
 export async function deleteProduct(productId) {
-  const { error } = await supabase
-    .from("products")
-    .delete()
-    .eq("id", productId);
+  try {
+    const { data } = await api.delete(`/products/${productId}`);
 
-  return { error };
+    return {
+      data,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error.response?.data || error,
+    };
+  }
 }
 
 export async function updateProduct(productId, updatedData) {
-  console.log("Updating:", productId);
+  try {
+    const { data } = await api.put(
+      `/products/${productId}`,
+      updatedData
+    );
 
-  const { data, error } = await supabase
-    .from("products")
-    .update(updatedData)
-    .eq("id", productId)
-    .select();
-
-  console.log("Returned Data:", data);
-  console.log("Returned Error:", error);
-
-  return { data, error };
+    return {
+      data,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error.response?.data || error,
+    };
+  }
 }
 
 export async function getProductForEdit(productId) {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("id", productId);
-
-  console.log("Data:", data);
-  console.log("Error:", error);
-
-  return {
-    data: data?.[0],
-    error,
-  };
+  return await getProductById(productId);
 }
 
-export async function searchProducts(item, location) {
-  let query = supabase.from("products").select("*");
-
-  if (item) {
-    query = query.ilike("title", `%${item}%`);
-  }
-
-  if (location) {
-    query = query.ilike("location", `%${location}%`);
-  }
-
-  const { data, error } = await query;
-
-  return { data, error };
-}
-
-export async function getProductsByCategory(category) {
-  return await supabase
-    .from("products")
-    .select("*")
-    .ilike("category", category)
-    .order("created_at", {
-      ascending: false,
+export async function searchProducts(
+  item = "",
+  location = "",
+  page = 1,
+  limit = 12
+) {
+  try {
+    const { data } = await api.get("/products", {
+      params: {
+        search: item,
+        location,
+        page,
+        limit,
+      },
     });
+
+    return {
+      data: data.products,
+      pagination: {
+        currentPage: data.currentPage,
+        totalPages: data.totalPages,
+        totalProducts: data.totalProducts,
+      },
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: [],
+      pagination: null,
+      error: error.response?.data || error,
+    };
+  }
+}
+
+export async function getProductsByCategory(
+  category,
+  page = 1,
+  limit = 12
+) {
+  try {
+    const { data } = await api.get("/products", {
+      params: {
+        category,
+        page,
+        limit,
+      },
+    });
+
+    return {
+      data: data.products,
+      pagination: {
+        currentPage: data.currentPage,
+        totalPages: data.totalPages,
+        totalProducts: data.totalProducts,
+      },
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: [],
+      pagination: null,
+      error: error.response?.data || error,
+    };
+  }
 }

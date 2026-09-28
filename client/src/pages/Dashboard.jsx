@@ -1,8 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-
 import Sidebar from "../components/Dashboard/Sidebar";
 import MobileBottomNav from "../components/Dashboard/MobileBottomNav";
-
 import MyProducts from "../components/Dashboard/MyProducts";
 import Messages from "../components/Dashboard/Messages";
 import Profile from "../components/Dashboard/Profile";

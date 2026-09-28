@@ -8,12 +8,13 @@ import {
   Camera,
 } from "lucide-react";
 
-import {
-  updateProfile,
-  uploadProfileImage,
-} from "../../services/profileService";
+import { updateProfile } from "../../services/profileService";
+import { uploadImages } from "../../services/uploadService";
 
-import { getProducts } from "../../services/productService";
+import {
+  showSuccess,
+  showError,
+} from "../../utils/toast";
 
 export default function EditProfileModal({
   profile,
@@ -26,13 +27,14 @@ export default function EditProfileModal({
     useState(null);
 
   const [preview, setPreview] = useState(
-    profile.avatar_url || ""
+    profile.profileImage || ""
   );
 
   const [formData, setFormData] = useState({
-    full_name: profile.full_name || "",
-    phone: profile.phone || "",
+    name: profile.name || "",
+    phoneNumber: profile.phoneNumber || "",
     city: profile.city || "",
+    bio: profile.bio || "",
   });
 
   function handleImageChange(e) {
@@ -50,77 +52,81 @@ export default function EditProfileModal({
 
     setLoading(true);
 
-    let avatarUrl = profile.avatar_url;
+    let profileImageUrl =
+      profile.profileImage || "";
 
     if (profileImage) {
-      const {
-        data: uploadedUrl,
-        error: uploadError,
-      } = await uploadProfileImage(
-        profile.id,
-        profileImage
-      );
+      const { data, error } = await uploadImages([
+        profileImage,
+      ]);
 
-      if (uploadError) {
+      if (error) {
         setLoading(false);
-        alert(uploadError.message);
+
+        showError(
+          error.message ||
+            "Image upload failed"
+        );
+
         return;
       }
 
-      avatarUrl = uploadedUrl;
+      profileImageUrl = data.images[0];
     }
 
-    const {
-      data,
-      error,
-    } = await updateProfile(
-      profile.id,
-      {
+    const { data, error } =
+      await updateProfile({
         ...formData,
-        avatar_url: avatarUrl,
-      }
-    );
+        profileImage: profileImageUrl,
+      });
 
     setLoading(false);
 
     if (error) {
-      alert(error.message);
+      showError(
+        error.message ||
+          "Profile update failed"
+      );
       return;
     }
 
-    onProfileUpdated(data);
+    onProfileUpdated(data.user);
 
     onClose();
   }
 
   return (
-    <div
-      className="
-        fixed
-        inset-0
-        z-50
-        bg-black/50
-        backdrop-blur-sm
-        flex
-        items-end
-        md:items-center
-        justify-center
-      "
-    >
-      <div
-        className="
-          w-full
-          h-[92vh]
-          md:h-auto
-          md:max-w-lg
-          bg-white
-          rounded-t-3xl
-          md:rounded-3xl
-          shadow-2xl
-          overflow-y-auto
-        "
-      >
+   <div
+  className="
+    fixed
+    inset-0
+    z-50
+    bg-black/50
+    backdrop-blur-sm
+    flex
+    items-end
+    md:items-center
+    justify-center
+    overflow-y-auto
+    p-4
+  "
+>
 
+
+        <div
+  className="
+    w-full
+    h-[90vh]
+    md:max-w-lg
+    bg-white
+    rounded-t-3xl
+    md:rounded-3xl
+    shadow-2xl
+    overflow-y-auto
+    custom-scrollbar
+  "
+>
+        {/* Header */}
 
         <div
           className="
@@ -138,7 +144,6 @@ export default function EditProfileModal({
           "
         >
           <div>
-
             <h2 className="text-2xl font-bold text-neutral-900">
               Edit Profile
             </h2>
@@ -146,7 +151,6 @@ export default function EditProfileModal({
             <p className="text-sm text-stone-500 mt-1">
               Update your personal information
             </p>
-
           </div>
 
           <button
@@ -164,25 +168,20 @@ export default function EditProfileModal({
           >
             <X size={20} />
           </button>
-
         </div>
-
 
         <form
           onSubmit={handleSubmit}
           className="p-6 space-y-6"
         >
-
+          {/* Profile Image */}
 
           <div className="flex flex-col items-center">
-
             <label
               htmlFor="profile-image"
               className="cursor-pointer group"
             >
-
               <div className="relative">
-
                 <div
                   className="
                     w-32
@@ -198,24 +197,18 @@ export default function EditProfileModal({
                     shadow-md
                   "
                 >
-
                   {preview ? (
-
                     <img
                       src={preview}
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />
-
                   ) : (
-
                     <User
                       size={60}
                       className="text-stone-400"
                     />
-
                   )}
-
                 </div>
 
                 <div
@@ -238,9 +231,7 @@ export default function EditProfileModal({
                 >
                   <Camera size={18} />
                 </div>
-
               </div>
-
             </label>
 
             <input
@@ -258,30 +249,26 @@ export default function EditProfileModal({
             <p className="text-sm text-stone-500">
               Click the image to upload a new photo
             </p>
-
           </div>
 
+          {/* Full Name */}
 
           <div>
-
             <label className="flex items-center gap-2 mb-2 font-medium text-neutral-800">
-
               <User
                 size={16}
                 className="text-amber-600"
               />
-
               Full Name
-
             </label>
 
             <input
               type="text"
-              value={formData.full_name}
+              value={formData.name}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  full_name: e.target.value,
+                  name: e.target.value,
                 })
               }
               placeholder="Enter your full name"
@@ -300,31 +287,26 @@ export default function EditProfileModal({
                 focus:ring-amber-100
               "
             />
-
           </div>
 
-          {/* Phone */}
+                    {/* Phone */}
 
           <div>
-
             <label className="flex items-center gap-2 mb-2 font-medium text-neutral-800">
-
               <Phone
                 size={16}
                 className="text-amber-600"
               />
-
               Phone Number
-
             </label>
 
             <input
               type="text"
-              value={formData.phone}
+              value={formData.phoneNumber}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  phone: e.target.value,
+                  phoneNumber: e.target.value,
                 })
               }
               placeholder="Enter your phone number"
@@ -343,22 +325,17 @@ export default function EditProfileModal({
                 focus:ring-amber-100
               "
             />
-
           </div>
 
           {/* City */}
 
           <div>
-
             <label className="flex items-center gap-2 mb-2 font-medium text-neutral-800">
-
               <MapPin
                 size={16}
                 className="text-amber-600"
               />
-
               City
-
             </label>
 
             <input
@@ -386,13 +363,50 @@ export default function EditProfileModal({
                 focus:ring-amber-100
               "
             />
-
           </div>
 
-          {/* Action Buttons */}
+          {/* Bio */}
+
+          <div>
+            <label className="flex items-center gap-2 mb-2 font-medium text-neutral-800">
+              <User
+                size={16}
+                className="text-amber-600"
+              />
+              Bio
+            </label>
+
+            <textarea
+              rows={4}
+              value={formData.bio}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  bio: e.target.value,
+                })
+              }
+              placeholder="Tell something about yourself..."
+              className="
+                w-full
+                rounded-xl
+                border
+                border-stone-300
+                bg-stone-50
+                px-4
+                py-3
+                outline-none
+                resize-none
+                transition
+                focus:border-amber-500
+                focus:ring-4
+                focus:ring-amber-100
+              "
+            />
+          </div>
+
+          {/* Buttons */}
 
           <div className="flex flex-col-reverse md:flex-row gap-3 pt-2">
-
             <button
               type="button"
               onClick={onClose}
@@ -438,13 +452,9 @@ export default function EditProfileModal({
                 ? "Saving..."
                 : "Save Changes"}
             </button>
-
           </div>
-
-                  </form>
-
+        </form>
       </div>
-
     </div>
   );
 }

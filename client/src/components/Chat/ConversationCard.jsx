@@ -1,21 +1,15 @@
 import { useAuth } from "../../context/AuthContext";
 
-export default function ConversationCard({
-  chat,
-  selected,
-  onClick,
-}) {
+export default function ConversationCard({ chat, selected, onClick }) {
   const { user } = useAuth();
 
-  const isSeller = chat.seller_id === user.id;
+  const isSeller = chat.seller?._id === user._id;
 
-  const name = isSeller
-    ? chat.buyer?.full_name
-    : chat.seller?.full_name;
+  const otherUser = isSeller ? chat.buyer : chat.seller;
 
-  const avatar = isSeller
-    ? chat.buyer?.avatar_url
-    : chat.seller?.avatar_url;
+  const name = otherUser?.name;
+
+  const avatar = otherUser?.profileImage;
 
   const initials = (name || "U")
     .split(" ")
@@ -45,13 +39,10 @@ export default function ConversationCard({
       `}
     >
       <div className="flex items-center gap-4">
-
         {/* Avatar */}
 
         <div className="shrink-0">
-
           {avatar ? (
-
             <img
               src={avatar}
               alt={name}
@@ -66,9 +57,7 @@ export default function ConversationCard({
                 border-amber-100
               "
             />
-
           ) : (
-
             <div
               className="
                 w-12
@@ -88,17 +77,13 @@ export default function ConversationCard({
             >
               {initials}
             </div>
-
           )}
-
         </div>
 
         {/* Content */}
 
         <div className="flex-1 min-w-0">
-
           <div className="flex items-center justify-between gap-3">
-
             <h3 className="font-semibold text-neutral-900 truncate text-base">
               {name}
             </h3>
@@ -108,11 +93,9 @@ export default function ConversationCard({
                 {chat.time}
               </span>
             )}
-
           </div>
 
           <div className="mt-2">
-
             <span
               className="
                 inline-block
@@ -126,9 +109,8 @@ export default function ConversationCard({
                 max-w-full
               "
             >
-              {chat.products?.title}
+              {chat.product?.title}{" "}
             </span>
-
           </div>
 
           {chat.lastMessage && (
@@ -136,9 +118,7 @@ export default function ConversationCard({
               {chat.lastMessage}
             </p>
           )}
-
         </div>
-
       </div>
     </button>
   );

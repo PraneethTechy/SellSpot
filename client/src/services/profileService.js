@@ -1,58 +1,52 @@
-import { supabase } from "./supabase";
+import api from "./apiClient";
 
-export async function createProfile(profile) {
-  return await supabase
-    .from("profiles")
-    .insert(profile)
-    .select()
-    .single();
+export async function getMyProfile() {
+  try {
+    const { data } = await api.get("/profile/me");
+
+    return {
+      data: data.user,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error.response?.data || error,
+    };
+  }
 }
 
 export async function getProfileById(id) {
-  return await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", id)
-    .single();
-}
+  try {
+    const { data } = await api.get(`/profile/${id}`);
 
-export async function updateProfile(id, updates) {
-  return await supabase
-    .from("profiles")
-    .update(updates)
-    .eq("id", id)
-    .select()
-    .single();
-}
-
-// Upload or Replace Profile Image
-export async function uploadProfileImage(userId, file) {
-  const fileExt = file.name.split(".").pop();
-
-  // Always use the same filename for the user
-  const filePath = `${userId}.${fileExt}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("avatars")
-    .upload(filePath, file, {
-      upsert: true,
-    });
-
-  if (uploadError) {
+    return {
+      data: data.user,
+      error: null,
+    };
+  } catch (error) {
     return {
       data: null,
-      error: uploadError,
+      error: error.response?.data || error,
     };
   }
+}
 
-  const {
-    data: { publicUrl },
-  } = supabase.storage
-    .from("avatars")
-    .getPublicUrl(filePath);
+export async function updateProfile(profileData) {
+  try {
+    const { data } = await api.put(
+      "/profile",
+      profileData
+    );
 
-  return {
-    data: publicUrl,
-    error: null,
-  };
+    return {
+      data,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error.response?.data || error,
+    };
+  }
 }

@@ -1,13 +1,21 @@
-import { NavLink, Link } from "react-router-dom";
 import {
   Package,
   MessageCircle,
   User,
   ArrowLeft,
   Store,
+  LogOut,
 } from "lucide-react";
 
+import { useState } from "react";
+import { NavLink, Link, useNavigate } from "react-router-dom";
+
+import ConfirmModal from "../Common/ConfirmModal"
+
 export default function Sidebar() {
+
+const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   const linkClass = ({ isActive }) =>
     `flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-300 ${
       isActive
@@ -15,10 +23,18 @@ export default function Sidebar() {
         : "text-stone-700 hover:bg-stone-100 hover:text-neutral-900"
     }`;
 
+  const navigate = useNavigate();
+
+  function handleLogout() {
+  localStorage.removeItem("token");
+  navigate("/login");
+}
+
   return (
-<aside className="hidden md:flex w-72 bg-white border-r border-stone-200 shadow-sm p-6 flex-col">
-  
-        {/* Back Arrow Button */}
+
+    <>
+    <aside className="hidden md:flex w-72 bg-white border-r border-stone-200 shadow-sm p-6 flex-col">
+      {/* Back Arrow Button */}
       <div className="mb-4">
         <Link
           to="/"
@@ -31,9 +47,7 @@ export default function Sidebar() {
 
       {/* Title */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-neutral-900">
-          Dashboard
-        </h1>
+        <h1 className="text-3xl font-bold text-neutral-900">Dashboard</h1>
 
         <p className="mt-2 text-sm text-stone-500">
           Manage your marketplace account
@@ -56,9 +70,44 @@ export default function Sidebar() {
           <User size={20} />
           Profile
         </NavLink>
+
+        
       </nav>
 
-      
+       <button
+  onClick={() => setShowLogoutModal(true)}
+  className="
+    mt-auto
+    w-full
+    flex
+    items-center
+    gap-3
+    px-4
+    py-3
+    rounded-xl
+    text-red-600
+    hover:bg-red-100
+    transition-all
+    duration-300
+  "
+>
+  <LogOut size={20} />
+  <span>Logout</span>
+</button>
     </aside>
+
+
+
+    <ConfirmModal
+  isOpen={showLogoutModal}
+  title="Logout"
+  message="Are you sure you want to logout?"
+  confirmText="Logout"
+  cancelText="Cancel"
+  onCancel={() => setShowLogoutModal(false)}
+  onConfirm={handleLogout}
+/>
+
+</>
   );
 }

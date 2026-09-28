@@ -1,15 +1,6 @@
 import { useState } from "react";
-import {
-  Link,
-  useNavigate,
-  useLocation,
-} from "react-router-dom";
-
-import {
-  signIn,
-  signInWithGoogle,
-} from "../services/authService";
-
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { signIn } from "../services/authService";
 import {
   Mail,
   Lock,
@@ -18,16 +9,20 @@ import {
   BadgeCheck,
   ShoppingBag,
 } from "lucide-react";
-
+import { googleLogin } from "../services/authService";
+import { showSuccess, showError } from "../utils/toast";
+import { useAuth } from "../context/AuthContext";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from =
-    location.state?.from?.pathname || "/";
+  const from = location.state?.from?.pathname || "/";
 
   const [loading, setLoading] = useState(false);
+
+  const { loadCurrentUser } = useAuth();
 
   const [formData, setFormData] = useState({
     email: "",
@@ -46,38 +41,48 @@ export default function Login() {
 
     setLoading(true);
 
-    const { error } = await signIn(
-      formData.email,
-      formData.password
-    );
-
-    setLoading(false);
+    const { error } = await signIn(formData.email, formData.password);
 
     if (error) {
-      alert(error.message);
+      setLoading(false);
+
+      showError(
+        error.message || error.response?.data?.message || "Login failed",
+      );
+
       return;
     }
+
+    await loadCurrentUser();
+
+    setLoading(false);
 
     navigate(from, {
       replace: true,
     });
   }
 
-  async function handleGoogleLogin() {
-  const { error } = await signInWithGoogle();
+  async function handleGoogleLogin(response) {
+    const { data, error } = await googleLogin(response.credential);
 
-  if (error) {
-    alert(error.message);
+    if (error) {
+      showError(error.message || "Google login failed");
+      return;
+    }
+
+    localStorage.setItem("token", data.token);
+
+    await loadCurrentUser();
+
+    showSuccess("Logged in successfully");
+
+    navigate("/dashboard");
   }
-}
-
   return (
     <div className="min-h-screen bg-stone-100 flex">
-
       {/* Left Section */}
 
       <div className="hidden lg:flex w-1/2 bg-neutral-900 text-white p-16 flex-col justify-center">
-
         <span className="text-5xl font-extrabold tracking-wide">
           <span>Sell</span>
           <span className="text-amber-400">Spot</span>
@@ -90,65 +95,39 @@ export default function Login() {
         </h2>
 
         <p className="mt-6 text-stone-300 text-lg leading-8 max-w-md">
-          Log in to continue buying and selling products
-          with trusted people in your city.
+          Log in to continue buying and selling products with trusted people in
+          your city.
         </p>
 
         <div className="mt-12 space-y-6">
-
           <div className="flex items-center gap-4">
-            <ShieldCheck
-              className="text-amber-400"
-              size={28}
-            />
-            <span className="text-lg">
-              Secure Marketplace
-            </span>
+            <ShieldCheck className="text-amber-400" size={28} />
+            <span className="text-lg">Secure Marketplace</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <BadgeCheck
-              className="text-amber-400"
-              size={28}
-            />
-            <span className="text-lg">
-              Trusted Community
-            </span>
+            <BadgeCheck className="text-amber-400" size={28} />
+            <span className="text-lg">Trusted Community</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <ShoppingBag
-              className="text-amber-400"
-              size={28}
-            />
-            <span className="text-lg">
-              Thousands of Products
-            </span>
+            <ShoppingBag className="text-amber-400" size={28} />
+            <span className="text-lg">Thousands of Products</span>
           </div>
-
         </div>
-
       </div>
 
       {/* Right Section */}
 
       <div className="flex-1 flex items-center justify-center px-6 py-12">
-
         <div className="w-full max-w-lg bg-white rounded-3xl border border-stone-200 shadow-xl p-10">
-
-          <h1 className="text-4xl font-bold text-slate-900">
-            Login
-          </h1>
+          <h1 className="text-4xl font-bold text-slate-900">Login</h1>
 
           <p className="mt-2 text-stone-500">
             Continue to your SellSpot account.
           </p>
 
-          <form
-            onSubmit={handleSubmit}
-            className="mt-8 space-y-5"
-          >
-
+          <form onSubmit={handleSubmit} className="mt-8 space-y-5">
             <InputField
               icon={<Mail size={18} />}
               type="email"
@@ -173,65 +152,49 @@ export default function Login() {
             >
               {loading ? "Logging in..." : "Login"}
 
-              {!loading && (
-                <ArrowRight size={18} />
-              )}
+              {!loading && <ArrowRight size={18} />}
             </button>
 
-            <button
-  type="button"
-  onClick={handleGoogleLogin}
-  className="
-    w-full
-    border
-    border-stone-300
-    rounded-xl
-    py-3
-    flex
-    items-center
-    justify-center
-    gap-3
-    hover:bg-stone-100
-    transition
-  "
->
-  <img
-    src="https://www.svgrepo.com/show/475656/google-color.svg"
-    className="w-5 h-5"
-    alt=""
-  />
+            <div className="flex items-center my-6">
+              <div className="flex-1 border-t"></div>
 
-  Continue with Google
-</button>
+              <span className="px-4 text-sm text-stone-500">OR</span>
 
-<div className="flex items-center my-6">
-  <div className="flex-1 border-t"></div>
+              <div className="flex-1 border-t"></div>
+            </div>
 
-  <span className="px-4 text-sm text-stone-500">
-    OR
-  </span>
+            <div className="mt-6">
+              <GoogleLogin
+                onSuccess={handleGoogleLogin}
+                onError={() => {
+                  showError("Google login failed");
+                }}
+              />
+            </div>
 
-  <div className="flex-1 border-t"></div>
-</div>
-
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => navigate("/")}
+                className="
+     w-full  hover:bg-stone-100 text-stone-700 rounded-xl py-3 font-semibold flex items-center justify-center gap-2 transition
+    "
+              >
+                Continue as Guest
+              </button>
+            </div>
           </form>
 
           <p className="mt-8 text-center text-stone-500">
             Don't have an account?{" "}
-
             <Link
               to="/signup"
               className="font-semibold text-amber-600 hover:text-amber-700"
             >
               Create Account
             </Link>
-
           </p>
-
         </div>
-
       </div>
-
     </div>
   );
 }
@@ -246,10 +209,7 @@ function InputField({
 }) {
   return (
     <div className="flex items-center gap-3 border border-stone-300 bg-stone-50 rounded-xl px-4 py-3 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-100 transition">
-
-      <div className="text-stone-500">
-        {icon}
-      </div>
+      <div className="text-stone-500">{icon}</div>
 
       <input
         type={type}
@@ -260,7 +220,6 @@ function InputField({
         required
         className="w-full bg-transparent outline-none"
       />
-
     </div>
   );
 }

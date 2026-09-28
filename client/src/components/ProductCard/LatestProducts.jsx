@@ -1,8 +1,16 @@
 import { ArrowRight } from "lucide-react";
 import ProductCard from "./ProductCard";
+import Pagination from "../Pagination/Pagination";
+import ProductGridSkeleton from "../Skeleton/ProductGridSkeleton";
 
-export default function LatestProducts({ products, loading }) {
-  return (
+export default function LatestProducts({
+  products,
+  loading,
+  currentPage,
+  totalPages,
+  onPageChange,
+  title="Latest Products",
+}) {  return (
     <section
       id="latest-products"
       className="py-20 bg-stone-100"
@@ -16,7 +24,7 @@ export default function LatestProducts({ products, loading }) {
           <div>
 
             <h2 className="text-4xl font-bold text-slate-900">
-              Latest Products
+              {title}
             </h2>
 
             <p className="mt-2 text-slate-500">
@@ -25,18 +33,12 @@ export default function LatestProducts({ products, loading }) {
 
           </div>
 
-    
-
         </div>
 
         {/* Products */}
 
         {loading ? (
-          <div className="flex justify-center items-center py-24">
-
-            <div className="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin" />
-
-          </div>
+          <ProductGridSkeleton count={8} />
 
         ) : products.length === 0 ? (
 
@@ -54,16 +56,22 @@ export default function LatestProducts({ products, loading }) {
 
         ) : (
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+         <>
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+    {products.map((product) => (
+      <ProductCard
+        key={product._id}
+        product={product}
+      />
+    ))}
+  </div>
 
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-              />
-            ))}
-
-          </div>
+  <Pagination
+    currentPage={currentPage}
+    totalPages={totalPages}
+    onPageChange={onPageChange}
+  />
+</>
 
         )}
 
